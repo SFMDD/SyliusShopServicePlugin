@@ -1,0 +1,4 @@
+services:
+  fmdd.shop_service:
+    class: FMDD\SyliusShopServicePlugin\Service\ShopService
+    arguments: ["@service_container"]

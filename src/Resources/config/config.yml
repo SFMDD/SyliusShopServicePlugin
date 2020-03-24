@@ -1,0 +1,4 @@
+imports:
+  - { resource: "@FMDDSyliusShopServicePlugin/Resources/config/services.yml" }
+
+
