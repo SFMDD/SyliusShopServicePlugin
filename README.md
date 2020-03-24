@@ -11,6 +11,6 @@
 #config/packages/_sylius.yaml
 imports:
     ...
-    - { resource: "@FMDDSyliusShopServicePlugin/Resources/config/config.yml"}
+    - { resource: "@FMDDSyliusShopServicePlugin/Resources/config/config.yml" }
 ```
 
