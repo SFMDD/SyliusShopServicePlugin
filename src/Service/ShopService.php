@@ -1,6 +1,6 @@
 <?php
 
-namespace FMDD\SyliusShopServicePlugin\Utils;
+namespace FMDD\SyliusShopServicePlugin\Service;
 
 use Doctrine\ORM\NonUniqueResultException;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository;
