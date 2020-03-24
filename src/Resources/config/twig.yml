@@ -1,0 +1,3 @@
+twig:
+  globals:
+    app_shop_service: '@fmdd.shop_service'

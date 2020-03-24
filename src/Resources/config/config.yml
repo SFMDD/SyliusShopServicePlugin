@@ -1,4 +1,5 @@
 imports:
   - { resource: "@FMDDSyliusShopServicePlugin/Resources/config/services.yml" }
+  - { resource: "@FMDDSyliusShopServicePlugin/Resources/config/twig.yml" }
 
 
