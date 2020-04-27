@@ -5,9 +5,8 @@
     "description": "Shop Service for Sylius.",
     "license": "MIT",
     "require": {
-        "php": "^7.2",
-
-        "sylius/sylius": "^1.6"
+        "php": "^7.4",
+        "sylius/sylius": "^1.7"
     },
     "require-dev": {
         "behat/behat": "^3.4",
@@ -20,7 +19,6 @@
         "friends-of-behat/symfony-extension": "^2.0",
         "friends-of-behat/variadic-extension": "^1.1",
         "lakion/mink-debug-extension": "^1.2.3",
-        "phpspec/phpspec": "^5.0",
         "phpstan/phpstan-doctrine": "^0.11",
         "phpstan/phpstan-shim": "^0.11",
         "phpstan/phpstan-webmozart-assert": "^0.11",
