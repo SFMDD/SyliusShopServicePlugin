@@ -171,7 +171,7 @@ class ShopService
         $price = $this->getPricingArray($variant, $channel);
         $tmp['price'] = ['tax' => $price[0], 'noTax' => $price[1]];
         if($original){
-            $originalPricing = $tmp-$this->getPricingArray($variant, $channel);
+            $originalPricing = $this->getPricingArray($variant, $channel);
             $tmp['originalPrice'] = ['tax' => $originalPricing[0], 'noTax' => $originalPricing[1]];
         }
         return $tmp;
