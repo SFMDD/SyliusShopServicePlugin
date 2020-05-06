@@ -167,8 +167,8 @@ class ShopService
      */
     public function getPricingVariant(ProductVariantInterface $variant, ChannelInterface $channel, $original = false): array
     {
-        $tmp = array();
-        $price = $tmp-$this->getPricingArray($variant, $channel);
+        $tmp = [];
+        $price = $this->getPricingArray($variant, $channel);
         array_push($tmp, ['price' => ['tax' => $price[0], 'noTax' => $price[1]]]);
         if($original){
             $originalPricing = $tmp-$this->getPricingArray($variant, $channel);
@@ -177,6 +177,12 @@ class ShopService
         return $tmp;
     }
 
+    /**
+     * @param ProductVariantInterface $variant
+     * @param ChannelInterface $channel
+     * @param bool $originalPrice
+     * @return array
+     */
     private function getPricingArray(ProductVariantInterface $variant, ChannelInterface $channel, $originalPrice = false){
 
         if(!$originalPrice) $price = $variant->getChannelPricingForChannel($channel)->getPrice();
