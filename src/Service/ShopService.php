@@ -156,7 +156,16 @@ class ShopService
     {
         /** @var ProductVariantInterface $variant */
         $variant = $this->variantResolver->getVariant($product);
+        return $this->getPricingVariant($variant, $channel);
+    }
 
+    /**
+     * @param ProductVariantInterface $variant
+     * @param ChannelInterface $channel
+     * @return array
+     */
+    public function getPricingVariant(ProductVariantInterface $variant, ChannelInterface $channel): array
+    {
         $taxRate = $this->taxRateResolver->resolve($variant);
 
         $price = $variant->getChannelPricingForChannel($channel)->getPrice();
