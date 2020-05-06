@@ -7,11 +7,16 @@ use Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductTaxonRepository;
 use Sylius\Bundle\TaxonomyBundle\Doctrine\ORM\TaxonRepository;
+use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\Order;
 use Sylius\Component\Core\Model\ProductTaxon;
+use Sylius\Component\Core\Model\ProductVariantInterface;
 use Sylius\Component\Core\Model\Taxon;
 use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Product\Model\ProductInterface;
+use Sylius\Component\Product\Resolver\ProductVariantResolverInterface;
+use Sylius\Component\Taxation\Calculator\CalculatorInterface;
+use Sylius\Component\Taxation\Resolver\TaxRateResolverInterface;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ShopService
@@ -20,6 +25,20 @@ class ShopService
      * @var ContainerInterface
      */
     protected $container;
+    /**
+     * @var TaxRateResolverInterface
+     */
+    private $taxRateResolver;
+
+    /**
+     * @var CalculatorInterface
+     */
+    private $calculator;
+
+    /**
+     * @var ProductVariantResolverInterface
+     */
+    private $variantResolver;
 
     private $repoTaxon;
     private $repoProductTaxon;
@@ -30,15 +49,23 @@ class ShopService
         TaxonRepository $repoTaxon,
         ProductTaxonRepository $productTaxonRepository,
         ProductRepository $repoProduct,
-        OrderRepository $repoOrder
-    ){
+        OrderRepository $repoOrder,
+        TaxRateResolverInterface $taxRateResolver,
+        CalculatorInterface $calculator,
+        ProductVariantResolverInterface $variantResolver
+    )
+    {
         $this->repoTaxon = $repoTaxon;
         $this->repoProductTaxon = $productTaxonRepository;
         $this->repoProduct = $repoProduct;
         $this->repoOrder = $repoOrder;
+        $this->taxRateResolver = $taxRateResolver; // sylius.tax_rate_resolver
+        $this->calculator = $calculator; // sylius.tax_calculator
+        $this->variantResolver = $variantResolver; // sylius.product_variant_resolver.default
     }
 
-    public function getTaxonByCode($code) {
+    public function getTaxonByCode($code)
+    {
         return $this->repoTaxon->findOneBy(array('code' => $code));
     }
 
@@ -93,7 +120,7 @@ class ShopService
                     if ($p->isEnabled())
                         array_push($list, $products[0]);
                     unset($products[0]);
-                    if(empty($products)) break;
+                    if (empty($products)) break;
                 }
                 $count++;
             }
@@ -105,7 +132,8 @@ class ShopService
      * @param string $number
      * @return object|Order
      */
-    public function getOrder($number) {
+    public function getOrder($number)
+    {
         return $this->repoOrder->findOneBy(array('number' => $number));
     }
 
@@ -113,7 +141,36 @@ class ShopService
      * @param $code
      * @return object|Taxon
      */
-    public function getTaxon($code){
+    public function getTaxon($code)
+    {
         return $this->repoTaxon->findOneBy(array('code' => $code));
+    }
+
+    /**
+     * @param ProductInterface $product
+     *
+     * @param ChannelInterface $channel
+     * @return array
+     */
+    public function getPricing(ProductInterface $product, ChannelInterface $channel): array
+    {
+        /** @var ProductVariantInterface $variant */
+        $variant = $this->variantResolver->getVariant($product);
+
+        $taxRate = $this->taxRateResolver->resolve($variant);
+
+        $price = $variant->getChannelPricingForChannel($channel)->getPrice();
+
+        $totalTaxAmount = $this->calculator->calculate($price, $taxRate);
+
+        if ($taxRate->isIncludedInPrice()) {
+            $priceWithTax = $price;
+            $priceWithoutTax = $price - $totalTaxAmount;
+        } else {
+            $priceWithTax = $price + $totalTaxAmount;
+            $priceWithoutTax = $price;
+        }
+
+        return [$priceWithTax, $priceWithoutTax];
     }
 }
