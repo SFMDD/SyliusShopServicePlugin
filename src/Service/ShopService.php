@@ -162,14 +162,26 @@ class ShopService
     /**
      * @param ProductVariantInterface $variant
      * @param ChannelInterface $channel
+     * @param bool $original
      * @return array
      */
-    public function getPricingVariant(ProductVariantInterface $variant, ChannelInterface $channel): array
+    public function getPricingVariant(ProductVariantInterface $variant, ChannelInterface $channel, $original = false): array
     {
+        $tmp = array();
+        $price = $tmp-$this->getPricingArray($variant, $channel);
+        array_push($tmp, ['price' => ['tax' => $price[0], 'noTax' => $price[1]]]);
+        if($original){
+            $originalPricing = $tmp-$this->getPricingArray($variant, $channel);
+            array_push($tmp, ['originalPrice' => ['tax' => $originalPricing[0], 'noTax' => $originalPricing[1]]]);
+        }
+        return $tmp;
+    }
+
+    private function getPricingArray(ProductVariantInterface $variant, ChannelInterface $channel, $originalPrice = false){
+
+        if(!$originalPrice) $price = $variant->getChannelPricingForChannel($channel)->getPrice();
+        else $price = $variant->getChannelPricingForChannel($channel)->getOriginalPrice();
         $taxRate = $this->taxRateResolver->resolve($variant);
-
-        $price = $variant->getChannelPricingForChannel($channel)->getPrice();
-
         $totalTaxAmount = $this->calculator->calculate($price, $taxRate);
 
         if ($taxRate->isIncludedInPrice()) {
@@ -179,7 +191,6 @@ class ShopService
             $priceWithTax = $price + $totalTaxAmount;
             $priceWithoutTax = $price;
         }
-
         return [$priceWithTax, $priceWithoutTax];
     }
 }
