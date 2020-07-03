@@ -7,6 +7,7 @@ use Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductTaxonRepository;
 use Sylius\Bundle\TaxonomyBundle\Doctrine\ORM\TaxonRepository;
+use Sylius\Component\Channel\Context\ChannelContextInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
 use Sylius\Component\Core\Model\Order;
 use Sylius\Component\Core\Model\ProductTaxon;
@@ -44,6 +45,7 @@ class ShopService
     private $repoProductTaxon;
     private $repoProduct;
     private $repoOrder;
+    private $channelContext;
 
     public function __construct(
         TaxonRepository $repoTaxon,
@@ -52,7 +54,8 @@ class ShopService
         OrderRepository $repoOrder,
         TaxRateResolverInterface $taxRateResolver,
         CalculatorInterface $calculator,
-        ProductVariantResolverInterface $variantResolver
+        ProductVariantResolverInterface $variantResolver,
+        ChannelContextInterface $channelContext
     )
     {
         $this->repoTaxon = $repoTaxon;
@@ -62,6 +65,7 @@ class ShopService
         $this->taxRateResolver = $taxRateResolver; // sylius.tax_rate_resolver
         $this->calculator = $calculator; // sylius.tax_calculator
         $this->variantResolver = $variantResolver; // sylius.product_variant_resolver.default
+        $this->channelContext = $channelContext;
     }
 
     public function getTaxonByCode($code)
@@ -80,8 +84,10 @@ class ShopService
             $products = $this->repoProductTaxon->createQueryBuilder('pt')
                 ->select('count(pt.id)')
                 ->innerJoin('pt.product', 'product', 'WITH', 'product.enabled = 1')
+                ->innerJoin('product.channels', 'pc', 'WITH', 'pc.id = ?1')
                 ->andWhere('pt.taxon = ?0')
                 ->setParameter(0, $taxonomy->getId())
+                ->setParameter(1, $this->channelContext->getChannel()->getId())
                 ->getQuery()->getSingleScalarResult();
         } catch (NonUniqueResultException $e) {
             $products = 0;

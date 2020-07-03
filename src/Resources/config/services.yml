@@ -9,3 +9,4 @@ services:
       - '@sylius.tax_rate_resolver'
       - '@sylius.tax_calculator'
       - '@sylius.product_variant_resolver.default'
+      - '@sylius.context.channel'
