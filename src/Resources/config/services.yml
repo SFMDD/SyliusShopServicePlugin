@@ -2,10 +2,12 @@ services:
   fmdd.shop_service:
     class: FMDD\SyliusShopServicePlugin\Service\ShopService
     arguments:
+      - "@doctrine"
       - "@sylius.repository.taxon"
       - "@sylius.repository.product_taxon"
       - "@sylius.repository.product"
       - "@sylius.repository.order"
+      - "@sylius.repository.tax_rate"
       - '@sylius.tax_rate_resolver'
       - '@sylius.tax_calculator'
       - '@sylius.product_variant_resolver.default'

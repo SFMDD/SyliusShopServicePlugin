@@ -2,10 +2,12 @@
 
 namespace FMDD\SyliusShopServicePlugin\Service;
 
+use Doctrine\Bundle\DoctrineBundle\Registry;
 use Doctrine\ORM\NonUniqueResultException;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\OrderRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductRepository;
 use Sylius\Bundle\CoreBundle\Doctrine\ORM\ProductTaxonRepository;
+use Sylius\Bundle\ResourceBundle\Doctrine\ORM\EntityRepository;
 use Sylius\Bundle\TaxonomyBundle\Doctrine\ORM\TaxonRepository;
 use Sylius\Component\Channel\Context\ChannelContextInterface;
 use Sylius\Component\Core\Model\ChannelInterface;
@@ -17,47 +19,41 @@ use Sylius\Component\Core\Model\TaxonInterface;
 use Sylius\Component\Product\Model\ProductInterface;
 use Sylius\Component\Product\Resolver\ProductVariantResolverInterface;
 use Sylius\Component\Taxation\Calculator\CalculatorInterface;
+use Sylius\Component\Taxation\Model\TaxRate;
 use Sylius\Component\Taxation\Resolver\TaxRateResolverInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class ShopService
 {
-    /**
-     * @var ContainerInterface
-     */
-    protected $container;
-    /**
-     * @var TaxRateResolverInterface
-     */
+    /** @var Registry */
+    private $doctrine;
+    /** @var TaxRateResolverInterface */
     private $taxRateResolver;
-
-    /**
-     * @var CalculatorInterface
-     */
+    /** @var CalculatorInterface */
     private $calculator;
-
-    /**
-     * @var ProductVariantResolverInterface
-     */
+    /** @var ProductVariantResolverInterface */
     private $variantResolver;
 
     private $repoTaxon;
     private $repoProductTaxon;
     private $repoProduct;
     private $repoOrder;
+    private $taxRateRepository;
     private $channelContext;
 
     public function __construct(
+        Registry $doctrine,
         TaxonRepository $repoTaxon,
         ProductTaxonRepository $productTaxonRepository,
         ProductRepository $repoProduct,
         OrderRepository $repoOrder,
+        EntityRepository $taxRepository,
         TaxRateResolverInterface $taxRateResolver,
         CalculatorInterface $calculator,
         ProductVariantResolverInterface $variantResolver,
         ChannelContextInterface $channelContext
     )
     {
+        $this->doctrine = $doctrine;
         $this->repoTaxon = $repoTaxon;
         $this->repoProductTaxon = $productTaxonRepository;
         $this->repoProduct = $repoProduct;
@@ -66,6 +62,7 @@ class ShopService
         $this->calculator = $calculator; // sylius.tax_calculator
         $this->variantResolver = $variantResolver; // sylius.product_variant_resolver.default
         $this->channelContext = $channelContext;
+        $this->taxRateRepository = $taxRepository;
     }
 
     public function getTaxonByCode($code)
@@ -193,9 +190,19 @@ class ShopService
 
         if(!$originalPrice) $price = $variant->getChannelPricingForChannel($channel)->getPrice();
         else $price = $variant->getChannelPricingForChannel($channel)->getOriginalPrice();
+        /** @var TaxRate $taxRate */
         $taxRate = $this->taxRateResolver->resolve($variant);
-        $totalTaxAmount = $this->calculator->calculate($price, $taxRate);
 
+        if(is_null($taxRate)) {
+            // Handle product show error
+            $taxRate = $this->taxRateRepository->findOneBy(array('code' => 'tva_20'));
+            $variant->setTaxCategory($taxRate->getCategory());
+            $em = $this->doctrine->getManager();
+            $em->persist($variant);
+            $em->flush();
+        }
+
+        $totalTaxAmount = $this->calculator->calculate($price, $taxRate);
         if ($taxRate->isIncludedInPrice()) {
             $priceWithTax = $price;
             $priceWithoutTax = $price - $totalTaxAmount;
